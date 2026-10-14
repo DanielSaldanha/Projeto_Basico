@@ -1,0 +1,20 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+
+
+/dist
+
+# Visual Studio Code
+.vscode/*
+*.vsix
+
+# Exceções (arquivos que devem ser rastreados pelo Git)
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!*.code-workspace
