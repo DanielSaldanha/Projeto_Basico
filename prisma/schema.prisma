@@ -7,9 +7,50 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+
+model Document {
+  id          String   @id @default(uuid())
+  title       String   // Nome do arquivo ou título do documento
+  content     String   @db.Text // texto puro do documento
+  url         String?  // Link opcional para o arquivo original (S3, Drive, etc.)
+  mimeType    String?  // Ex: application/pdf, text/markdown
+  totalChunks Int?      @default(0)
+  metadata    Json?    // Metadados flexíveis (autor, tags, data de criação)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relação: Um documento tem muitos chunks
+  chunks      Chunk[]
+
+  @@map("documents") // Opcional: define o nome da tabela em minúsculo e plural
+}
+
+
+model Chunk {
+  id         String   @id @default(uuid())
+  documentId String   // Chave estrangeira para o Documento
+  content    String   @db.Text // O texto puro extraído deste pedaço
+  sequence   Int      // Ordem do chunk no documento (0, 1, 2...)
+  metadata   Json?    // Metadados específicos do chunk (ex: número da página)
+  createdAt  DateTime @default(now())
+
+  // Relação com o modelo Document
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // ATENÇÃO: O Prisma não suporta nativamente o tipo 'vector' do pgvector no schema de forma direta.
+  // Usamos Unsupported("vector(1536)") para embeddings do OpenAI (1536 dimensões).
+  // Se usar Cohere ou outro, mude o número de dimensões (ex: 1024 ou 384).
+  embedding  Unsupported("vector(1536)")?
+
+  @@index([documentId]) // Índice para buscas rápidas por documento
+  @@map("chunks")
 }
