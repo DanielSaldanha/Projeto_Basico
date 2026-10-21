@@ -9,8 +9,17 @@ export interface Documents {
 export interface Chunks {
     documentId: string,
     content: string,
-    sequence: number
+    sequence: number,
+    embedding?: number[]
 
+}
+
+export interface ChunkSimilarity {
+    id: string,
+    documentId: string,
+    content: string,
+    sequence: number,
+    distance: number
 }
 //DOCUMENTS
 export async function createDocument(dados: Documents): Promise<Document> {
@@ -40,11 +49,11 @@ export async function findDocuments(dados: Partial<Documents>): Promise<Document
     catch (error) { throw new Error("Erro ao tentar procurar documentos: " + error) }
 }
 
-export async function findDocument(dados: Partial<Documents>): Promise<Document | null> {
+export async function findDocument(title: string): Promise<Document | null> {
     try {
         const res = await prisma.document.findFirst({
             where: {
-                title: dados.title,
+                title: title,
             },
         })
         return res;
@@ -62,11 +71,22 @@ export async function createChunk(dados: Chunks): Promise<Chunk> {
                 sequence: dados.sequence
             },
         })
+        // Campo Unsupported("vector") não pode ser escrito pelo client tipado: UPDATE via raw SQL
+        if (dados.embedding) {
+            const vector = toPgVector(dados.embedding)
+            await prisma.$executeRaw`
+                UPDATE chunks SET embedding = ${vector}::vector WHERE id = ${res.id}
+            `
+        }
         return res;
     }
     catch (error) {
         throw new Error("Erro na criação de chunk: " + error);
     }
+}
+
+function toPgVector(embedding: number[]): string {
+    return `[${embedding.join(",")}]`
 }
 
 export async function findChunksByDocumentId(documentId: string): Promise<Chunk[]> {//futuramente por embedding
@@ -91,4 +111,18 @@ export async function findChunk(dados: Partial<Chunks>): Promise<Chunk | null> {
         return res;
     }
     catch (error) { throw new Error("Erro ao tentar procurar chunk: " + error) }
+}
+
+export async function findChunksByEmbeddings(embedding: number[], limit: number = 10): Promise<ChunkSimilarity[]> {
+    try {
+        const vector = toPgVector(embedding)
+        return await prisma.$queryRaw<ChunkSimilarity[]>`
+            SELECT id, "documentId", content, sequence, embedding <=> ${vector}::vector AS distance
+            FROM chunks
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> ${vector}::vector
+            LIMIT ${limit}
+        `
+    }
+    catch (error) { throw new Error("Erro ao buscar chunks por similaridade: " + error) }
 }

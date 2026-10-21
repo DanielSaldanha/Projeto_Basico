@@ -47,9 +47,9 @@ model Chunk {
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   // ATENÇÃO: O Prisma não suporta nativamente o tipo 'vector' do pgvector no schema de forma direta.
-  // Usamos Unsupported("vector(1536)") para embeddings do OpenAI (1536 dimensões).
-  // Se usar Cohere ou outro, mude o número de dimensões (ex: 1024 ou 384).
-  embedding  Unsupported("vector(1536)")?
+  // Usamos Unsupported("vector(384)") para embeddings do all-MiniLM-L6-v2 (@xenova/transformers).
+  // Se trocar de modelo, mude o número de dimensões (ex: 768 para nomic-embed-text, 1536 para OpenAI).
+  embedding  Unsupported("vector(384)")?
 
   @@index([documentId]) // Índice para buscas rápidas por documento
   @@map("chunks")
