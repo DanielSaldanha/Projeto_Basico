@@ -1,7 +1,8 @@
 import { Document, Chunk } from "@prisma/client";
 import { createDocument, createChunk, findChunksByDocumentId, Documents, Chunks, findDocument, findChunksByEmbeddings, ChunkSimilarity } from "../repositories/repository";
 import { chunkText } from "./chunkService";
-import { createEmbedding } from "./llm.service";
+import { createEmbedding, callLLM } from "./llm.service";
+import client from "../llm/llm"
 
 export async function createDocsAndChunks(dados: Documents): Promise<Document | null> {
     const res = await createDocument(dados);
@@ -21,6 +22,16 @@ export async function searchSimilarChunks(query: string, limit: number = 10): Pr
     const embedding = await createEmbedding(query)
     return findChunksByEmbeddings(embedding, limit)
 }
+
+export async function interactLLM(query: string, limit: number = 10): Promise<String | null> {
+    const embedding = await createEmbedding(query)
+    const chunks = await findChunksByEmbeddings(embedding, limit)
+    const contents = chunks.map(m => m.content);
+    const prompt = "contexto: " + contents + " pergunta do usuario: " + query
+    const LLMResponse = callLLM(prompt)
+    return LLMResponse
+}
+
 
 export async function searchChunks(id: string): Promise<Chunk[] | null> {
     const res = await findChunksByDocumentId(id.toString())
