@@ -1,4 +1,4 @@
-import { prisma } from "../prisma/prisma"
+import { prisma } from "../configs/prisma/prisma"
 import { Document, Chunk } from '@prisma/client';
 
 //obs: você pode retirar o Partial dos parâmeteros dês de que você coloque interrogação (?) nos campos da interface

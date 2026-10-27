@@ -1,8 +1,9 @@
 import { Document, Chunk } from "@prisma/client";
 import { createDocument, createChunk, findChunksByDocumentId, Documents, Chunks, findDocument, findChunksByEmbeddings, ChunkSimilarity } from "../repositories/repository";
-import { chunkText } from "./chunkService";
+import { chunkText } from "./chunk.service";
 import { createEmbedding, callLLM } from "./llm.service";
-import client from "../llm/llm"
+import client from "../configs/llm/llm";
+import redisClient from "../configs/redis/redis";
 
 export async function createDocsAndChunks(dados: Documents): Promise<Document | null> {
     const res = await createDocument(dados);
@@ -24,14 +25,17 @@ export async function searchSimilarChunks(query: string, limit: number = 10): Pr
 }
 
 export async function interactLLM(query: string, limit: number = 10): Promise<String | null> {
+    const key = query.trim().toLowerCase();
+    const cache = await redisClient.get(key);
+    if (cache) return cache
     const embedding = await createEmbedding(query)
     const chunks = await findChunksByEmbeddings(embedding, limit)
     const contents = chunks.map(m => m.content);
     const prompt = "contexto: " + contents + " pergunta do usuario: " + query
-    const LLMResponse = callLLM(prompt)
+    const LLMResponse = await callLLM(prompt)
+    await redisClient.set(key, String(LLMResponse), { EX: 60 })
     return LLMResponse
 }
-
 
 export async function searchChunks(id: string): Promise<Chunk[] | null> {
     const res = await findChunksByDocumentId(id.toString())

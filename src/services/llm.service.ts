@@ -1,6 +1,7 @@
-import client from "../llm/llm"
-import { getEmbeddingPipeline } from "../llm/embedding"
+import client from "../configs/llm/llm"
+import { getEmbeddingPipeline } from "../configs/llm/embedding"
 import { findChunksByEmbeddings } from "../repositories/repository";
+import { comRetry } from "./utils.service"
 
 export async function callLLM(prompt: string): Promise<String | null> {
     const model = process.env.OPENAI_MODEL
@@ -20,11 +21,12 @@ export async function* streamLLM(query: string, limit: number = 10): AsyncGenera
     const chunks = await findChunksByEmbeddings(embedding, limit)
     const contents = chunks.map(m => m.content);
     const prompt = "contexto: " + contents + " pergunta do usuario: " + query
-    const stream = await client.responses.create({
+    const stream = await comRetry(() => client.responses.create({
         model: process.env.OPENAI_MODEL, // hoje está hardcoded "gpt-5", diferente do resto
         input: prompt,
-        stream: true
-    });
+        stream: true,
+        max_output_tokens: 200 // limite de to0kens por resposta
+    }));
     for await (const event of stream) {
         if (event.type === "response.output_text.delta") {
             yield event.delta;//um return que não interrompe uma função

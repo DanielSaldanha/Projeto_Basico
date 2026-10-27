@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createDocsAndChunks, searchChunks, searchDoc, searchSimilarChunks, interactLLM } from "../services/service";
 import { streamLLM } from "../services/llm.service";
-import client from "../llm/llm";
+import client from "../configs/llm/llm";
 
 export async function generateChunks(req: Request, res: Response): Promise<Response | null> {
     const { title, content } = req.body;
