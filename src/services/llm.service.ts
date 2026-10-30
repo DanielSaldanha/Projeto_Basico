@@ -3,7 +3,7 @@ import { getEmbeddingPipeline } from "../configs/llm/embedding"
 import { findChunksByEmbeddings } from "../repositories/repository";
 import { comRetry } from "./utils.service"
 
-export async function callLLM(prompt: string): Promise<String | null> {
+export async function callLLM(prompt: string): Promise<string | null> {
     const model = process.env.OPENAI_MODEL
     const res = await client.responses.create({ model, input: prompt, instructions: "Você responde formalmente" })
     return res.output_text
@@ -25,7 +25,7 @@ export async function* streamLLM(query: string, limit: number = 10): AsyncGenera
         model: process.env.OPENAI_MODEL, // hoje está hardcoded "gpt-5", diferente do resto
         input: prompt,
         stream: true,
-        max_output_tokens: 200 // limite de to0kens por resposta
+        max_output_tokens: 200 // limite de tokens por resposta (adicione em qualquer chamada)
     }));
     for await (const event of stream) {
         if (event.type === "response.output_text.delta") {

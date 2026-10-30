@@ -1,5 +1,5 @@
 import { prisma } from "../configs/prisma/prisma"
-import { Document, Chunk } from '@prisma/client';
+import { Document, Chunk, Conversation, Message } from '@prisma/client';
 
 //obs: você pode retirar o Partial dos parâmeteros dês de que você coloque interrogação (?) nos campos da interface
 export interface Documents {
@@ -21,6 +21,13 @@ export interface ChunkSimilarity {
     sequence: number,
     distance: number
 }
+
+export interface Messages {
+    role: "user" | "assistant",
+    content: string,
+    conversationId?: string
+}
+
 //DOCUMENTS
 export async function createDocument(dados: Documents): Promise<Document> {
     try {
@@ -125,4 +132,39 @@ export async function findChunksByEmbeddings(embedding: number[], limit: number 
         `
     }
     catch (error) { throw new Error("Erro ao buscar chunks por similaridade: " + error) }
+}
+
+//CONVERSATION
+
+export async function createConversation(title?: string): Promise<Conversation> {
+    try {
+        return await prisma.conversation.create({
+            data: { title }
+        });
+    } catch (error) {
+        throw new Error("Erro ao criar conversa: " + error);
+    }
+}
+
+export async function createMessage(dados: Messages): Promise<Message> {
+    try {
+        let conversationId = dados.conversationId;
+        if (!conversationId) {
+            const newConversation = await prisma.conversation.create({
+                data: {}
+            });
+            conversationId = newConversation.id;
+        }
+
+        const res = await prisma.message.create({
+            data: {
+                content: dados.content,
+                role: dados.role,
+                conversationId: conversationId
+            }
+        });
+        return res;
+    } catch (error) {
+        throw new Error("erro ao criar mensagem " + error);
+    }
 }
