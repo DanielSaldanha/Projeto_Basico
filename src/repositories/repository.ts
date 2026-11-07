@@ -1,5 +1,5 @@
 import { prisma } from "../configs/prisma/prisma"
-import { Document, Chunk, Conversation, Message } from '@prisma/client';
+import { Document, Chunk, Conversation, Message, User } from '@prisma/client';
 
 //obs: você pode retirar o Partial dos parâmeteros dês de que você coloque interrogação (?) nos campos da interface
 export interface Documents {
@@ -26,6 +26,11 @@ export interface Messages {
     role: "user" | "assistant",
     content: string,
     conversationId?: string
+}
+
+export interface Users {
+    name: string,
+    email: string
 }
 
 //DOCUMENTS
@@ -167,4 +172,33 @@ export async function createMessage(dados: Messages): Promise<Message> {
     } catch (error) {
         throw new Error("erro ao criar mensagem " + error);
     }
+}
+
+//USER
+
+export async function createUser(dados: Users): Promise<User> {
+    try {
+        const res = await prisma.user.create({
+            data: {
+                name: dados.name,
+                email: dados.email
+            },
+        })
+        return res;
+    }
+    catch (error) {
+        throw new Error("Erro na criação de usuário: " + error);
+    }
+}
+
+export async function findUser(email: string): Promise<User | null> {
+    try {
+        const res = await prisma.user.findFirst({
+            where: {
+                email: email,
+            },
+        })
+        return res;
+    }
+    catch (error) { throw new Error("Erro ao tentar procurar documento: " + error) }
 }

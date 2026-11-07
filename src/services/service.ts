@@ -1,8 +1,9 @@
-import { Document, Chunk, Message } from "@prisma/client";
-import { createDocument, createChunk, findChunksByDocumentId, Documents, Chunks, findDocument, findChunksByEmbeddings, ChunkSimilarity, Messages, createMessage } from "../repositories/repository";
+import { Document, Chunk, Message, User } from "@prisma/client";
+import { createDocument, createChunk, findChunksByDocumentId, Documents, Chunks, findDocument, findChunksByEmbeddings, ChunkSimilarity, Messages, createMessage, findUser, Users, createUser } from "../repositories/repository";
 import { chunkText } from "./chunk.service";
 import { createEmbedding, callLLM } from "./llm.service";
 import redisClient from "../configs/redis/redis";
+
 
 export async function createDocsAndChunks(dados: Documents): Promise<Document | null> {
     const res = await createDocument(dados);
@@ -68,4 +69,15 @@ export async function searchDoc(title: string): Promise<Document | null> {
 export async function generateMessage(dados: Messages): Promise<Message | null> {
     const res = await createMessage(dados);
     return res
+}
+
+export async function verifyAccount(email: string): Promise<User | null> {
+    const user = await findUser(email)
+    return user
+}
+
+export async function createAccount(dados: Users): Promise<User | null> {
+    const res = await createUser(dados);
+    if (res === null) return null
+    return res;
 }
