@@ -25,16 +25,16 @@ export async function searchSimilarChunks(query: string, limit: number = 10): Pr
 }
 
 export async function interactLLM(query: string, limit: number = 10): Promise<string | null> {
+
     const key = query.trim().toLowerCase();
+    const cache = await redisClient.get(key);
+    if (cache) return cache
 
     const userMessage: Messages = {
         role: "user",
         content: query
     };
     await generateMessage(userMessage);
-
-    const cache = await redisClient.get(key);
-    if (cache) return cache
 
     const embedding = await createEmbedding(query)
     const chunks = await findChunksByEmbeddings(embedding, limit)
